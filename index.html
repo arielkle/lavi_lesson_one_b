@@ -1,0 +1,628 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>משדרגים משימה</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap">
+<style>
+/* Layout: same board as the lesson, a 4-step rail above it (minutes 0–20), one screen visible at a time, nav row under the card. Chalkboard green = teacher/structure, chalk amber = learner ownership. */
+:root {
+  --bg: #eef2f0;
+  --surface: #ffffff;
+  --surface-2: #f5f8f6;
+  --ink: #17242a;
+  --muted: #56666b;
+  --line: #d5dfdb;
+  --board: #0f5e50;
+  --board-soft: #e1efeb;
+  --chalk: #b97a0c;
+  --chalk-soft: #fbf0d9;
+  --good: #1f7a45;
+  --good-soft: #e3f3e8;
+  --warn: #9a6200;
+  --warn-soft: #fbefd6;
+  --bad: #a83a32;
+  --bad-soft: #f8e4e1;
+  --on-board: #ffffff;
+  --font-display: "Secular One", "Assistant", "Arial Hebrew", Arial, sans-serif;
+  --font-body: "Assistant", "Arial Hebrew", Arial, sans-serif;
+  --radius: 14px;
+  --step: 1rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101a1d; --surface: #172327; --surface-2: #1d2b30; --ink: #e6eeeb; --muted: #9db0ab; --line: #2c3d42;
+    --board: #4fbfa6; --board-soft: #1b3a35; --chalk: #e8b04a; --chalk-soft: #3a2e15;
+    --good: #6fd39a; --good-soft: #17352a; --warn: #e8b04a; --warn-soft: #3a2e15; --bad: #f09088; --bad-soft: #3d2220;
+    --on-board: #0d1a17; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101a1d; --surface: #172327; --surface-2: #1d2b30; --ink: #e6eeeb; --muted: #9db0ab; --line: #2c3d42;
+  --board: #4fbfa6; --board-soft: #1b3a35; --chalk: #e8b04a; --chalk-soft: #3a2e15;
+  --good: #6fd39a; --good-soft: #17352a; --warn: #e8b04a; --warn-soft: #3a2e15; --bad: #f09088; --bad-soft: #3d2220;
+  --on-board: #0d1a17; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.reveal { display: grid; gap: 18px; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+.wrap {
+  max-width: 920px;
+  margin: 0 auto;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 16px;
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: 1.25; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; border-radius: 6px; }
+
+/* ---------- header ---------- */
+.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 20px; }
+.eyebrow { font-size: .85rem; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+.top h1 { font-size: clamp(1.5rem, 4vw, 2rem); color: var(--ink); }
+.clock { font-variant-numeric: tabular-nums; font-size: .95rem; color: var(--muted); white-space: nowrap; }
+.clock b { color: var(--board); font-weight: 700; }
+
+/* ---------- step rail ---------- */
+.rail { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.rail button {
+  width: 100%; text-align: start; background: none; border: 0; cursor: pointer; padding: 0;
+  display: grid; gap: 6px;
+}
+.rail .bar { height: 6px; border-radius: 3px; background: var(--line); transition: background .25s; }
+.rail .lbl { font-size: .82rem; color: var(--muted); line-height: 1.3; }
+.rail .lbl b { display: block; font-variant-numeric: tabular-nums; font-weight: 700; }
+.rail [aria-current="step"] .bar { background: var(--board); }
+.rail [aria-current="step"] .lbl { color: var(--ink); }
+.rail .done .bar { background: var(--board); opacity: .45; }
+@media (max-width: 560px) { .rail .lbl span { display: none; } }
+
+/* ---------- board / screens ---------- */
+.board {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(18px, 4vw, 36px);
+  min-width: 0;
+}
+.screen { display: grid; gap: 22px; }
+.screen-head { display: grid; gap: 6px; }
+.tag { display: inline-flex; gap: 8px; align-items: center; font-size: .85rem; color: var(--board); font-weight: 700; letter-spacing: .03em; }
+.tag .min { color: var(--muted); font-weight: 600; }
+.screen h2 { font-size: clamp(1.45rem, 3.6vw, 1.95rem); }
+.lead { color: var(--muted); max-width: 62ch; }
+.prose { display: grid; gap: 10px; max-width: 65ch; }
+.callout {
+  background: var(--board-soft); border-radius: 10px; padding: 14px 18px;
+  display: grid; gap: 4px; max-width: 70ch;
+}
+.callout strong { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; color: var(--board); }
+.note { font-size: .95rem; color: var(--muted); max-width: 70ch; }
+.kicker { font-size: .8rem; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: 999px; padding: 9px 20px; cursor: pointer; font-weight: 700;
+  border: 1.5px solid var(--board); background: var(--surface); color: var(--board);
+  transition: background .15s, color .15s;
+}
+.btn:hover { background: var(--board-soft); }
+.btn.primary { background: var(--board); color: var(--on-board); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn[disabled] { opacity: .4; cursor: default; }
+
+/* ---------- bottom nav ---------- */
+.nav { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.nav .count { font-size: .9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.fade { animation: fade .35s ease both; }
+@keyframes fade { from { opacity: .3; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fade { animation: none; } * { transition: none !important; } }
+/* ---------- shared bits from the lesson ---------- */
+.choice {
+  border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 16px; cursor: pointer; font-weight: 600;
+}
+.choice:hover { border-color: var(--board); }
+.choice[aria-pressed="true"] { border-color: var(--board); background: var(--board-soft); color: var(--board); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.badge { font-size: .78rem; font-weight: 700; border-radius: 999px; padding: 1px 10px; background: var(--chalk-soft); color: var(--chalk); }
+
+/* ---------- forms ---------- */
+.fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 560px) { .fields { grid-template-columns: 1fr; } }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.field label, .field .label { font-weight: 700; font-size: .95rem; }
+.field .hint { font-size: .88rem; color: var(--muted); }
+input[type="text"], select, textarea {
+  font: inherit; color: var(--ink); background: var(--surface-2); border: 1.5px solid var(--line); border-radius: 10px;
+  padding: 9px 12px; width: 100%;
+}
+textarea { resize: vertical; min-height: 110px; line-height: 1.55; }
+input[type="text"]:focus, select:focus, textarea:focus { outline: none; border-color: var(--board); background: var(--surface); }
+textarea[readonly] { background: var(--board-soft); border-color: transparent; min-height: 300px; font-size: .97rem; }
+
+/* ---------- rating grid ---------- */
+.rates { display: grid; gap: 8px; }
+.rate {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center;
+  border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 14px;
+}
+@media (max-width: 640px) { .rate { grid-template-columns: 1fr; } }
+.rate .name { font-family: var(--font-display); color: var(--board); font-size: 1.08rem; }
+.rate .q { font-size: .93rem; color: var(--muted); }
+.seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: .9rem; white-space: nowrap; }
+.seg button + button { border-inline-start: 1.5px solid var(--line); }
+.seg button[aria-pressed="true"][data-v="0"] { background: var(--board-soft); color: var(--board); }
+.seg button[aria-pressed="true"][data-v="1"] { background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 2px var(--muted); }
+.seg button[aria-pressed="true"][data-v="2"] { background: var(--chalk-soft); color: var(--chalk); }
+
+/* ---------- profile bars ---------- */
+.profile { display: grid; gap: 10px; border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.profile-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-weight: 700; }
+.profile-head .score { font-variant-numeric: tabular-nums; color: var(--chalk); }
+.pbar { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 10px; align-items: center; font-size: .93rem; }
+.ptrack { display: grid; gap: 3px; }
+.ptrack .tr { height: 10px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+.ptrack .fl { height: 100%; border-radius: 5px; transition: width .3s; }
+.fl.before { background: var(--muted); opacity: .55; }
+.fl.after { background: var(--chalk); }
+.pscale { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 10px; font-size: .78rem; color: var(--muted); }
+.pscale div { display: flex; justify-content: space-between; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .85rem; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-inline-end: 6px; vertical-align: -1px; }
+
+/* ---------- AI step ---------- */
+.prompt-box { display: grid; gap: 8px; }
+.ai-links { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: .92rem; color: var(--muted); }
+.ai-links a { color: var(--board); font-weight: 700; }
+.vet { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vet label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.vet input { width: 18px; height: 18px; margin-top: 4px; accent-color: var(--board); flex: none; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+.panel { border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.panel h3 { font-size: 1.1rem; color: var(--board); }
+.status { font-size: .9rem; color: var(--good); min-height: 1.2em; }
+.status.err { color: var(--bad); }
+.done-card {
+  background: var(--board); color: var(--on-board); border-radius: 12px; padding: 18px 20px; display: grid; gap: 6px;
+}
+.done-card p { font-family: var(--font-display); font-size: clamp(1.1rem, 3vw, 1.3rem); line-height: 1.45; }
+</style>
+<div class="wrap" dir="rtl" lang="he">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow">פיתוח מקצועי · שיעור 1 · פעילות התנסות</div>
+      <h1>משדרגים משימה</h1>
+    </div>
+    <div class="clock" id="clock">דקה <b>0–3</b> מתוך 20</div>
+  </header>
+
+  <nav aria-label="שלבי הפעילות">
+    <ol class="rail" id="rail" style="grid-template-columns: repeat(4, minmax(0, 1fr));"></ol>
+  </nav>
+
+  <main class="board" id="board">
+
+    <!-- ===================== שלב 1 ===================== -->
+    <section class="screen" data-screen="1" aria-labelledby="p1">
+      <div class="screen-head">
+        <div class="tag">שלב 1 · בוחרים משימה <span class="min">3 דק׳</span></div>
+        <h2 id="p1">איזו משימה נשדרג היום?</h2>
+        <p class="lead">בחרו משימה שנתתם לתלמידים בחודש האחרון. אם אין לכם משימה זמינה כרגע, התחילו מאחת הדוגמאות.</p>
+      </div>
+
+      <div class="row" role="group" aria-label="מקור המשימה">
+        <span class="kicker">התחלה מ:</span>
+        <button type="button" class="choice" data-sample="mine" aria-pressed="false">המשימה שלי</button>
+        <button type="button" class="choice" data-sample="math" aria-pressed="false">דוגמה: מתמטיקה</button>
+        <button type="button" class="choice" data-sample="history" aria-pressed="false">דוגמה: היסטוריה</button>
+        <button type="button" class="choice" data-sample="english" aria-pressed="false">דוגמה: אנגלית</button>
+      </div>
+
+      <div class="fields">
+        <div class="field">
+          <label for="subject">מקצוע ונושא</label>
+          <input type="text" id="subject" placeholder="למשל: ביולוגיה, מערכת החיסון">
+        </div>
+        <div class="field">
+          <label for="grade">שכבה</label>
+          <select id="grade">
+            <option value="ט׳">ט׳</option>
+            <option value="י׳">י׳</option>
+            <option value="י״א">י״א</option>
+            <option value="י״ב">י״ב</option>
+          </select>
+        </div>
+        <div class="field wide">
+          <label for="task">המשימה כפי שהתלמידים קיבלו אותה <span class="badge" id="sample-badge" hidden>דוגמה</span></label>
+          <textarea id="task" placeholder="הדביקו או תארו את ההנחיה: מה התלמידים נדרשו לעשות, באיזה פורמט, כמה זמן ואיך הוערכו."></textarea>
+          <span class="hint">מספיקות שלוש־ארבע שורות. אין צורך בדף העבודה המלא.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== שלב 2 ===================== -->
+    <section class="screen" data-screen="2" aria-labelledby="p2" hidden>
+      <div class="screen-head">
+        <div class="tag">שלב 2 · מנתחים <span class="min">5 דק׳</span></div>
+        <h2 id="p2">מי מנהל כל מרכיב במשימה?</h2>
+        <p class="lead">לכל אחד מחמשת המרכיבים, סמנו מי מקבל את ההחלטה בפועל. היו כנים: רוב המשימות בכיתה נמצאות בעיקר בעמודה הימנית, וזה בסדר.</p>
+      </div>
+      <div class="rates" id="rates-before"></div>
+      <div class="profile" id="profile-before"></div>
+    </section>
+
+    <!-- ===================== שלב 3 ===================== -->
+    <section class="screen" data-screen="3" aria-labelledby="p3" hidden>
+      <div class="screen-head">
+        <div class="tag">שלב 3 · משדרגים בסיוע בינה מלאכותית <span class="min">8 דק׳</span></div>
+        <h2 id="p3">מעבירים לתלמידים עוד החלטה אחת או שתיים</h2>
+        <p class="lead">אין צורך להפוך את כל המשימה. בחרו מרכיב אחד או שניים להעביר לאחריות התלמיד. סימנו מראש את המרכיבים שקיבלו את הדירוג הנמוך ביותר.</p>
+      </div>
+
+      <div class="row" id="targets" role="group" aria-label="מרכיבים לשדרוג"></div>
+
+      <div class="prompt-box">
+        <div class="kicker">הבקשה לבינה המלאכותית (נבנתה מהמשימה ומהניתוח שלכם)</div>
+        <textarea id="ai-prompt" readonly aria-label="נוסח הבקשה לבינה המלאכותית"></textarea>
+        <div class="ai-links">
+          <button type="button" class="btn primary" id="copy-prompt">העתקת הבקשה</button>
+          <span>והדביקו ב־</span>
+          <a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT</a>
+          <a href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini</a>
+          <a href="https://claude.ai/" target="_blank" rel="noopener">Claude</a>
+          <span>או בכלי שבית הספר מאשר.</span>
+        </div>
+        <div class="status" id="prompt-status" aria-live="polite"></div>
+        <p class="note">שימו לב לנוסח: הבקשה לא אומרת לכלי ״תכתוב לי משימה חדשה״. היא מבקשת הצעות ושאלה מבהירה, וההחלטה נשארת אצלכם. זה בדיוק השימוש התומך חשיבה שנרצה שהתלמידים ילמדו.</p>
+      </div>
+
+      <div class="two">
+        <div class="panel">
+          <h3>לפני שמאמצים הצעה</h3>
+          <ul class="vet" id="vet">
+            <li><label><input type="checkbox" id="v1"> ישימה בכיתה שלי, בזמן שיש לי</label></li>
+            <li><label><input type="checkbox" id="v2"> התלמיד עושה את החשיבה, לא הכלי</label></li>
+            <li><label><input type="checkbox" id="v3"> ברור מה התפקיד שלי כמורה: הדגמה, ליווי או משוב</label></li>
+            <li><label><input type="checkbox" id="v4"> מתאימה לגיל ולמוכנות של התלמידים</label></li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>המשימה המשודרגת</h3>
+          <div class="field">
+            <label for="task-new" class="hint">כתבו את הגרסה שבחרתם, אחרי שעברה את ארבע הבדיקות. אפשר לערוך ולקצר את מה שהכלי הציע.</label>
+            <textarea id="task-new" placeholder="למשל: התלמידים בוחרים 8 מתוך 15 תרגילים לפי מה שהם עוד לא בטוחים בו..."></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== שלב 4 ===================== -->
+    <section class="screen" data-screen="4" aria-labelledby="p4" hidden>
+      <div class="screen-head">
+        <div class="tag">שלב 4 · בודקים ומגישים <span class="min">4 דק׳</span></div>
+        <h2 id="p4">מה השתנה בפועל?</h2>
+        <p class="lead">דרגו שוב את המשימה, הפעם בגרסה המשודרגת. הדירוג הקודם כבר מסומן; שנו רק את מה שהשתנה.</p>
+      </div>
+      <div class="rates" id="rates-after"></div>
+      <div class="profile" id="profile-compare"></div>
+
+      <div class="field">
+        <label for="reflect">רפלקציה: מה השינוי המשמעותי ביותר, ומה עלול להיות קשה לתלמידים?</label>
+        <textarea id="reflect" style="min-height:90px"></textarea>
+      </div>
+
+      <div class="done-card">
+        <p>סיימתם. העתיקו את הסיכום והגישו אותו כתגובה למטלה ב־Classroom.</p>
+      </div>
+      <div class="row">
+        <button type="button" class="btn primary" id="copy-summary">העתקת הסיכום להגשה</button>
+        <span class="status" id="summary-status" aria-live="polite"></span>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="nav">
+    <button class="btn" id="prev" type="button">→ הקודם</button>
+    <span class="count" id="count">שלב 1 מתוך 4</span>
+    <button class="btn primary" id="next" type="button">הבא ←</button>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STEPS = [
+    { short: "בוחרים משימה", from: 0, to: 3 },
+    { short: "מנתחים", from: 3, to: 8 },
+    { short: "משדרגים בסיוע AI", from: 8, to: 16 },
+    { short: "בודקים ומגישים", from: 16, to: 20 }
+  ];
+
+  var COMPONENTS = [
+    { name: "מטרה", q: "מי קובע מה לומדים ולמה?" },
+    { name: "תכנון", q: "מי מחליט על סדר הפעולות, המשאבים והזמן?" },
+    { name: "בחירה", q: "מי בוחר את דרך הלמידה או האסטרטגיה?" },
+    { name: "בקרה", q: "מי בודק אם יש הבנה והתקדמות?" },
+    { name: "רפלקציה", q: "האם התלמיד חושב על הדרך שבה למד?" }
+  ];
+  var LEVELS = ["המורה", "משותף", "התלמיד"];
+
+  var SAMPLES = {
+    math: {
+      subject: "מתמטיקה, משוואות ריבועיות", grade: "י׳",
+      task: "התלמידים מקבלים דף עם 15 תרגילים במשוואות ריבועיות, מסודרים מהקל לקשה, ודף פתרונות לבדיקה עצמית. עליהם לפתור את כל התרגילים בבית ולהגיש בשיעור הבא. הציון לפי מספר התשובות הנכונות.",
+      before: [0, 0, 0, 1, 0],
+      upgraded: "התלמידים עונים קודם על שלושה תרגילי אבחון קצרים ובודקים מול הפתרונות. לפי התוצאה הם בוחרים 8 מתוך 15 תרגילים: מה שעוד לא בטוחים בו. אחרי כל 4 תרגילים הם בודקים מול הפתרונות ומסמנים ✓ או ?. בסוף הם כותבים משפט אחד: איזה סוג תרגיל עדיין קשה לי ומה אעשה עם זה. בשיעור הבא אני פותח עם התרגילים שסומנו ב־? אצל רוב הכיתה."
+    },
+    history: {
+      subject: "היסטוריה, עליית הנאציזם", grade: "י״א",
+      task: "התלמידים קוראים את פרק 3 בספר הלימוד וכותבים סיכום של עמוד אחד. הסיכום מוגש במודל ונבדק לפי מחוון: כיסוי הנושאים, דיוק ומבנה.",
+      before: [0, 0, 0, 0, 0],
+      upgraded: "לפני הקריאה כל תלמיד כותב שתי שאלות שהוא רוצה שהפרק יענה עליהן. התלמידים בוחרים את דרך הסיכום: ציר זמן מוער, מפת גורמים או טקסט. אחרי הכתיבה הם מבקשים מצ׳אטבוט לשאול אותם שלוש שאלות על הפרק, בלי לתת תשובות, ומוסיפים לסיכום שורה: על מה לא הצלחתי לענות. אני מדגים בכיתה איך נראית בקשה כזו לצ׳אטבוט."
+    },
+    english: {
+      subject: "אנגלית, כתיבת חיבור טיעוני", grade: "י״ב",
+      task: "Write a 250-word argumentative essay: Should schools ban smartphones? התלמידים כותבים בבית ומגישים. המורה מחזיר עם תיקונים וציון.",
+      before: [0, 0, 1, 0, 0],
+      upgraded: "התלמידים בוחרים אחד משלושה נושאים ומנסחים מטרה אישית מתוך המחוון (למשל: שימוש במילות קישור). הם כותבים טיוטה, בודקים אותה מול המחוון ומבקשים מכלי בינה מלאכותית משוב על המטרה שבחרו בלבד, בלי תיקון הטקסט. בגרסה הסופית הם מצרפים שתי שורות: מה שיניתי בעקבות המשוב ולמה."
+    }
+  };
+
+  /* ---------------- state ---------------- */
+  var KEY = "lavi-lesson1-practice-v1";
+  var state = {
+    step: 1, visited: [1], sample: "math",
+    subject: SAMPLES.math.subject, grade: SAMPLES.math.grade, task: SAMPLES.math.task,
+    before: SAMPLES.math.before.slice(), after: null, targets: null,
+    taskNew: SAMPLES.math.upgraded, vet: [], reflect: ""
+  };
+  try { var saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved) Object.assign(state, saved); } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function sum(a) { return a.reduce(function (x, y) { return x + (y == null ? 0 : y); }, 0); }
+
+  /* ---------------- rail + nav ---------------- */
+  var rail = $("#rail");
+  rail.innerHTML = STEPS.map(function (s, i) {
+    return '<li><button type="button" data-go="' + (i + 1) + '"><span class="bar"></span>' +
+      '<span class="lbl"><b>' + s.from + "–" + s.to + " דק׳</b><span>" + esc(s.short) + "</span></span></button></li>";
+  }).join("");
+  rail.addEventListener("click", function (e) { var b = e.target.closest("[data-go]"); if (b) go(+b.dataset.go); });
+  $("#prev").addEventListener("click", function () { go(state.step - 1); });
+  $("#next").addEventListener("click", function () { go(state.step + 1); });
+
+  function go(n, opts) {
+    if (n < 1 || n > STEPS.length) return;
+    state.step = n;
+    if (state.visited.indexOf(n) < 0) state.visited.push(n);
+    if (n === 3) renderTargets();
+    if (n === 4) { if (!state.after) state.after = state.before.slice(); renderRates("after"); renderCompare(); }
+    $$("[data-screen]").forEach(function (s) {
+      var on = +s.dataset.screen === n;
+      s.hidden = !on;
+      if (on) { s.classList.remove("fade"); void s.offsetWidth; s.classList.add("fade"); }
+    });
+    $$("button", rail).forEach(function (b) {
+      var k = +b.dataset.go;
+      if (k === n) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+      b.classList.toggle("done", k !== n && state.visited.indexOf(k) >= 0);
+    });
+    var s = STEPS[n - 1];
+    $("#clock").innerHTML = "דקה <b>" + s.from + "–" + s.to + "</b> מתוך 20";
+    $("#count").textContent = "שלב " + n + " מתוך " + STEPS.length;
+    $("#prev").disabled = n === 1;
+    $("#next").hidden = n === STEPS.length;
+    try { history.replaceState(null, "", "#p" + n); } catch (e) {}
+    if (!(opts && opts.noScroll)) $("#board").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    save();
+  }
+
+  /* ---------------- step 1 ---------------- */
+  var subjectEl = $("#subject"), gradeEl = $("#grade"), taskEl = $("#task"), taskNewEl = $("#task-new"), reflectEl = $("#reflect");
+  function fillStep1() {
+    subjectEl.value = state.subject; gradeEl.value = state.grade; taskEl.value = state.task;
+    $$("[data-sample]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.sample === state.sample)); });
+    $("#sample-badge").hidden = state.sample === "mine";
+  }
+  $$("[data-sample]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var k = b.dataset.sample;
+      if (k === state.sample) return;
+      if (k === "mine") {
+        Object.assign(state, { sample: "mine", subject: "", task: "", before: [null, null, null, null, null], after: null, targets: null, taskNew: "", vet: [], reflect: "" });
+      } else {
+        var s = SAMPLES[k];
+        Object.assign(state, { sample: k, subject: s.subject, grade: s.grade, task: s.task, before: s.before.slice(), after: null, targets: null, taskNew: s.upgraded, vet: [], reflect: "" });
+      }
+      fillAll(); save();
+      if (k === "mine") taskEl.focus();
+    });
+  });
+  function markMine() {
+    if (state.sample !== "mine") {
+      state.sample = "mine";
+      $$("[data-sample]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.sample === "mine")); });
+      $("#sample-badge").hidden = true;
+    }
+  }
+  subjectEl.addEventListener("input", function () { state.subject = subjectEl.value; markMine(); save(); });
+  gradeEl.addEventListener("change", function () { state.grade = gradeEl.value; save(); });
+  taskEl.addEventListener("input", function () { state.task = taskEl.value; markMine(); save(); });
+
+  /* ---------------- rating grids ---------------- */
+  function renderRates(which) {
+    var arr = state[which];
+    $("#rates-" + which).innerHTML = COMPONENTS.map(function (c, i) {
+      return '<div class="rate"><div><div class="name">' + c.name + '</div><div class="q">' + c.q + "</div></div>" +
+        '<div class="seg" role="group" aria-label="' + c.name + ': מי מחליט">' +
+        LEVELS.map(function (l, v) {
+          return '<button type="button" data-which="' + which + '" data-i="' + i + '" data-v="' + v + '" aria-pressed="' + (arr[i] === v) + '">' + l + "</button>";
+        }).join("") + "</div></div>";
+    }).join("");
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest(".seg button");
+    if (!b) return;
+    var which = b.dataset.which, i = +b.dataset.i, v = +b.dataset.v;
+    state[which][i] = v;
+    if (which === "before") { state.targets = null; renderRates("before"); renderProfile(); }
+    else { renderRates("after"); renderCompare(); }
+    save();
+  });
+
+  function bars(rows, showBefore) {
+    var html = '<div class="pscale"><span></span><div><span>המורה</span><span>משותף</span><span>התלמיד</span></div></div>';
+    html += COMPONENTS.map(function (c, i) {
+      var b = state.before[i], a = rows ? rows[i] : null;
+      var w = function (v) { return v == null ? 0 : (v + 1) / 3 * 100; };
+      return '<div class="pbar"><span>' + c.name + '</span><div class="ptrack">' +
+        (showBefore ? '<div class="tr"><div class="fl before" style="width:' + w(b) + '%"></div></div>' : "") +
+        (rows ? '<div class="tr"><div class="fl after" style="width:' + w(a) + '%"></div></div>' : "") +
+        "</div></div>";
+    }).join("");
+    return html;
+  }
+  function profileText(arr) {
+    var n = sum(arr);
+    if (arr.some(function (v) { return v == null; })) return "דרגו את כל חמשת המרכיבים כדי לראות את הפרופיל.";
+    if (n <= 2) return "המשימה מנוהלת בעיקר בידי המורה. נקודת פתיחה טובה לשדרוג.";
+    if (n <= 5) return "יש במשימה מרכיבים של עצמאות. שדרוג של מרכיב אחד או שניים יורגש.";
+    return "התלמידים מנהלים חלק משמעותי מהמשימה.";
+  }
+  function renderProfile() {
+    var arr = state.before;
+    $("#profile-before").innerHTML =
+      '<div class="profile-head"><span>פרופיל המשימה</span><span class="score">' + sum(arr) + " / 10 נקודות אחריות לתלמיד</span></div>" +
+      bars(arr, false) +
+      '<p class="note">' + profileText(arr) + "</p>";
+  }
+  function renderCompare() {
+    var gain = sum(state.after) - sum(state.before);
+    $("#profile-compare").innerHTML =
+      '<div class="profile-head"><span>לפני ואחרי</span><span class="score">לפני ' + sum(state.before) + " · אחרי " + sum(state.after) + " (מתוך 10)</span></div>" +
+      '<div class="legend"><span><i style="background:var(--muted);opacity:.55"></i>המשימה המקורית</span><span><i style="background:var(--chalk)"></i>המשימה המשודרגת</span></div>' +
+      bars(state.after, true) +
+      '<p class="note">' + (gain > 0 ? "העברתם לתלמידים " + gain + (gain === 1 ? " נקודת אחריות" : " נקודות אחריות") + ". שינוי קטן וישים שווה יותר מהפיכה שלא תתבצע."
+        : "עדיין לא סימנתם שינוי. אם המשימה המשודרגת אכן מעבירה החלטה לתלמיד, עדכנו את הדירוג.") + "</p>";
+  }
+
+  /* ---------------- step 3: AI prompt ---------------- */
+  function defaultTargets() {
+    var arr = state.before.map(function (v, i) { return { v: v == null ? 0 : v, i: i }; });
+    arr.sort(function (a, b) { return a.v - b.v || a.i - b.i; });
+    return [arr[0].i, arr[1].i].sort();
+  }
+  function renderTargets() {
+    if (!state.targets) state.targets = defaultTargets();
+    $("#targets").innerHTML = '<span class="kicker">מרכיבים לשדרוג:</span>' + COMPONENTS.map(function (c, i) {
+      return '<button type="button" class="choice" data-target="' + i + '" aria-pressed="' + (state.targets.indexOf(i) >= 0) + '">' + c.name + "</button>";
+    }).join("");
+    renderPrompt();
+  }
+  $("#targets").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-target]");
+    if (!b) return;
+    var i = +b.dataset.target, k = state.targets.indexOf(i);
+    if (k >= 0) { if (state.targets.length > 1) state.targets.splice(k, 1); }
+    else { state.targets.push(i); if (state.targets.length > 2) state.targets.shift(); }
+    renderTargets(); save();
+  });
+  function buildPrompt() {
+    var names = state.targets.map(function (i) { return COMPONENTS[i].name; });
+    var analysis = COMPONENTS.map(function (c, i) {
+      var v = state.before[i];
+      return "- " + c.name + ": " + (v == null ? "לא דורג" : (v === 1 ? "משותף למורה ולתלמיד" : "ההחלטה בידי " + LEVELS[v]));
+    }).join("\n");
+    return "אני מורה ל" + (state.subject || "[מקצוע ונושא]") + " בכיתה " + state.grade + ".\n" +
+      "זו משימה שנתתי לתלמידים:\n\"\"\"\n" + (state.task || "[תיאור המשימה]") + "\n\"\"\"\n\n" +
+      "ניתחתי את המשימה לפי חמישה מרכיבים של למידה עצמאית. מי מקבל את ההחלטה כיום:\n" + analysis + "\n\n" +
+      "אני רוצה לשדרג את המשימה כך שהתלמידים יקבלו יותר אחריות על: " + names.join(" ו") + ".\n\n" +
+      "הצע 2–3 שינויים קטנים שאפשר ליישם בשיעור אחד או שניים. לכל שינוי כתוב:\n" +
+      "1. מה התלמיד מחליט או עושה בעצמו שלא עשה קודם.\n" +
+      "2. מה תפקידי כמורה: הדגמה, ליווי או משוב.\n" +
+      "3. אם יש מקום לבינה מלאכותית, איך התלמידים ישתמשו בה כך שתתמוך בחשיבה שלהם ולא תבצע אותה במקומם.\n\n" +
+      "אל תכתוב מחדש את כל המשימה. אם חסר לך מידע חשוב על הכיתה, שאל אותי שאלה אחת לפני שאתה עונה.";
+  }
+  function renderPrompt() { $("#ai-prompt").value = buildPrompt(); }
+
+  function copyText(text, statusEl, okMsg) {
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+      statusEl.classList.toggle("err", !ok);
+      statusEl.textContent = ok ? okMsg : "ההעתקה האוטומטית לא עבדה. סמנו את הטקסט והעתיקו ידנית (Ctrl+C).";
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { statusEl.classList.remove("err"); statusEl.textContent = okMsg; }, fallback);
+    } else fallback();
+  }
+  $("#copy-prompt").addEventListener("click", function () {
+    copyText(buildPrompt(), $("#prompt-status"), "הבקשה הועתקה. הדביקו אותה בכלי הבינה המלאכותית וקראו את ההצעות בעין ביקורתית.");
+  });
+
+  var vetBoxes = $$("#vet input");
+  vetBoxes.forEach(function (c, i) { c.addEventListener("change", function () { state.vet[i] = c.checked; save(); }); });
+  taskNewEl.addEventListener("input", function () { state.taskNew = taskNewEl.value; save(); });
+  reflectEl.addEventListener("input", function () { state.reflect = reflectEl.value; save(); });
+
+  /* ---------------- step 4: summary ---------------- */
+  $("#copy-summary").addEventListener("click", function () {
+    var after = state.after || state.before;
+    var line = function (arr) { return COMPONENTS.map(function (c, i) { return c.name + ": " + (arr[i] == null ? "-" : LEVELS[arr[i]]); }).join(" | "); };
+    var text =
+      "פעילות התנסות – שיעור 1: משדרגים משימה\n" +
+      "מקצוע ושכבה: " + (state.subject || "-") + ", " + state.grade + "\n\n" +
+      "המשימה המקורית:\n" + (state.task || "-") + "\n\n" +
+      "ניתוח לפני (" + sum(state.before) + "/10):\n" + line(state.before) + "\n\n" +
+      "מרכיבים שבחרתי לשדרג: " + (state.targets || []).map(function (i) { return COMPONENTS[i].name; }).join(", ") + "\n\n" +
+      "המשימה המשודרגת:\n" + (state.taskNew || "-") + "\n\n" +
+      "ניתוח אחרי (" + sum(after) + "/10):\n" + line(after) + "\n\n" +
+      "רפלקציה:\n" + (state.reflect || "-");
+    copyText(text, $("#summary-status"), "הסיכום הועתק. הדביקו אותו כתגובה למטלה ב־Classroom.");
+  });
+
+  /* ---------------- boot ---------------- */
+  function fillAll() {
+    fillStep1();
+    taskNewEl.value = state.taskNew || "";
+    reflectEl.value = state.reflect || "";
+    vetBoxes.forEach(function (c, i) { c.checked = !!state.vet[i]; });
+    renderRates("before"); renderProfile();
+    if (state.step === 3) renderTargets();
+    if (state.step === 4) { if (!state.after) state.after = state.before.slice(); renderRates("after"); renderCompare(); }
+  }
+  fillAll();
+  var fromHash = /^#p([1-4])$/.exec(location.hash || "");
+  go(fromHash ? +fromHash[1] : state.step, { noScroll: true });
+})();
+</script>
+
+</body></html>
